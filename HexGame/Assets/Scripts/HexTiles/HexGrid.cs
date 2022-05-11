@@ -1,44 +1,70 @@
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
-[ExecuteInEditMode]
 public class HexGrid : MonoBehaviour {
 	// TODO: perlin noise for elevation
 
 	[Header("Grid Data")]
-	[SerializeField] Vector2Int gridSize;
+	[SerializeField] int gridSize;
 
 	[Header("Tile Data")]
 	[SerializeField] float radius;
-	[SerializeField] float thickness;
+	[SerializeField] float baseElevation;
+	[SerializeField] float maxElevation;
 	[SerializeField] bool flatTop;
 	[SerializeField] Material material;
 
-	void Update() {
-		if (Input.GetKeyDown(KeyCode.Space)) {
-			GenerateGrid();
-		}
+	[Header("Noise Data")]
+    [SerializeField] public float xOrg;
+    [SerializeField] public float yOrg;
+    [SerializeField] public float scale = 1.0F;
+
+	List<HexTileGenerator> list = new List<HexTileGenerator>();
+
+	void Awake() {
+		GenerateGrid();
 	}
 
-	void GenerateGrid() {
-		while(transform.childCount != 0){
-			Transform child = transform.GetChild(0);
-			child.parent = null;
-			Destroy(child.gameObject);
-        }
+	public void ClearGrid() {
+		foreach (HexTileGenerator h in list) {
+			if (Application.isEditor) {
+				DestroyImmediate(h.gameObject);
+			} else {
+				Destroy(h.gameObject);
+			}
+		} list.Clear();
+	}
 
-		for (int y=0; y<gridSize.y; y++) {
-			for (int x=0; x<gridSize.x; x++) {
+	public void GenerateGrid() {
+		ClearGrid();
+
+		List<HexTileGenerator> tempList = new List<HexTileGenerator>();
+
+		for (int y=0; y<gridSize; y++) {
+			for (int x=0; x<gridSize; x++) {
+				float xCoord = xOrg + x * scale;
+				float yCoord = yOrg + y * scale;
+				float sampleElevation = Mathf.PerlinNoise(xCoord, yCoord);
+				print(sampleElevation);
+
 				HexTileGenerator tile = new GameObject($"Hex{x}{y}").AddComponent<HexTileGenerator>();
 				tile.radius = radius;
-				tile.thickness = thickness;
+				tile.thickness = baseElevation + sampleElevation * maxElevation;
 				tile.flatTop = flatTop;
+				tile.pivotAtCenter = false;
 				tile.material = material;
 
 				tile.transform.position = GetHexPosition(x, y);
 				tile.transform.parent = transform;
+
+				tempList.Add(tile);
 			}
 		}
+
+		list = tempList;
+
+		EditorUtility.SetDirty(gameObject);
 	}
 
 	Vector3 GetHexPosition(int x, int y) {

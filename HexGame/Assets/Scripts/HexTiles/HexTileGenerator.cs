@@ -8,6 +8,9 @@ public class HexTileGenerator : MonoBehaviour {
 	[SerializeField] public bool pivotAtCenter;
 	[SerializeField] public bool flatTop;
 	[SerializeField] public Material material;
+	[SerializeField] public bool realtime = false;
+
+	[SerializeField] public Texture2D heightMap;
 
 	Mesh mesh;
 	MeshFilter filter;
@@ -19,8 +22,14 @@ public class HexTileGenerator : MonoBehaviour {
 		ren = GetComponent<MeshRenderer>();
 	}
 
+	void Start() {
+		GenerateHexTile();
+	}
+
 	void Update() {
-        GenerateHexTile();
+		if (realtime) {
+			GenerateHexTile();
+		}
     }
 
     void GenerateHexTile() {
